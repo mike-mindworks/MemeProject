@@ -37,17 +37,8 @@ class ViewController: UIViewController, UIImagePickerControllerDelegate, UINavig
         // Do any additional setup after loading the view.
         self.sendButton.isEnabled = false
         
-        self.topTextField.defaultTextAttributes = memeMeTextAttributes
-        self.topTextField.textAlignment = .center
-        self.topTextField.text = DEFAULT_TOP_TEXT
-        self.topTextField.delegate = self
-        topTextField.addTarget(self, action: #selector(requiredFieldsNotEmpty), for: .editingChanged)
-
-        self.bottomTextField.defaultTextAttributes = memeMeTextAttributes
-        self.bottomTextField.textAlignment = .center
-        self.bottomTextField.text = DEFAULT_BOTTOM_TEXT
-        self.bottomTextField.delegate = self
-        bottomTextField.addTarget(self, action: #selector(requiredFieldsNotEmpty), for: .editingChanged)
+        setTextFieldDefaults(self.topTextField, DEFAULT_TOP_TEXT)
+        setTextFieldDefaults(self.bottomTextField, DEFAULT_BOTTOM_TEXT)
     }
     
     override func viewWillAppear(_ animated: Bool) {
@@ -90,17 +81,11 @@ class ViewController: UIViewController, UIImagePickerControllerDelegate, UINavig
     }
     
     @IBAction func pickImageFromLibrary(_ sender: Any) {
-        let pickerController = UIImagePickerController()
-        pickerController.delegate = self
-        pickerController.sourceType = .photoLibrary
-        present(pickerController, animated: true, completion: nil)
+        pickFromSource(.photoLibrary)
     }
     
     @IBAction func pickImageFromCamera(_ sender: Any) {
-        let pickerController = UIImagePickerController()
-        pickerController.delegate = self
-        pickerController.sourceType = .camera
-        present(pickerController, animated: true, completion: nil)
+        pickFromSource(.camera)
     }
     
     @IBAction func cancel() {
@@ -115,13 +100,30 @@ class ViewController: UIViewController, UIImagePickerControllerDelegate, UINavig
         let activityViewController = UIActivityViewController(activityItems: items, applicationActivities: nil)
         activityViewController.completionWithItemsHandler = {
             (activityType, completed, returnedItems, error) in
-            self.save()
+            if (completed) {
+                self.save()
+            }
         }
         present(activityViewController, animated: true, completion: nil)
     }
     
+    func setTextFieldDefaults(_ textField: UITextField, _ defaultText: String) {
+        textField.defaultTextAttributes = memeMeTextAttributes
+        textField.textAlignment = .center
+        textField.text = defaultText
+        textField.delegate = self
+        textField.addTarget(self, action: #selector(requiredFieldsNotEmpty), for: .editingChanged)
+    }
+    
+    func pickFromSource(_ source: UIImagePickerController.SourceType) {
+        let pickerController = UIImagePickerController()
+        pickerController.delegate = self
+        pickerController.sourceType = source
+        present(pickerController, animated: true, completion: nil)
+    }
+    
     func save() {
-        let meme = Meme(topText: self.topTextField.text!, bottomText: self.bottomTextField.text!, originalImage: self.imageView.image!, memedImage: generateMemedImage())
+        _ = Meme(topText: self.topTextField.text!, bottomText: self.bottomTextField.text!, originalImage: self.imageView.image!, memedImage: generateMemedImage())
     }
     
     func generateMemedImage() -> UIImage {
