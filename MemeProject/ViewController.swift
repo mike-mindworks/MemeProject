@@ -19,6 +19,8 @@ class ViewController: UIViewController, UIImagePickerControllerDelegate, UINavig
     @IBOutlet weak var cameraButton: UIBarButtonItem!
     @IBOutlet weak var albumButton: UIBarButtonItem!
     
+    var currentMeme: Meme?
+    
     var currentTextField: UITextField?
     
     let memeMeTextAttributes: [NSAttributedString.Key: Any] = [
@@ -31,14 +33,32 @@ class ViewController: UIViewController, UIImagePickerControllerDelegate, UINavig
     let DEFAULT_TOP_TEXT = "TOP"
     let DEFAULT_BOTTOM_TEXT = "BOTTOM"
     
+    override init(nibName nibNameOrNil: String?, bundle nibBundleOrNil: Bundle?) {
+        super.init(nibName: nibNameOrNil, bundle: nibBundleOrNil)
+        self.hidesBottomBarWhenPushed = true
+    }
+    
+    required init?(coder: NSCoder) {
+        super.init(coder: coder)
+        self.hidesBottomBarWhenPushed = true
+    }
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         
         // Do any additional setup after loading the view.
         self.sendButton.isEnabled = false
         
-        setTextFieldDefaults(self.topTextField, DEFAULT_TOP_TEXT)
-        setTextFieldDefaults(self.bottomTextField, DEFAULT_BOTTOM_TEXT)
+        if let memeToEdit = self.currentMeme {
+            setTextFieldDefaults(self.topTextField, memeToEdit.topText ?? "")
+            setTextFieldDefaults(self.bottomTextField, memeToEdit.bottomText ?? "")
+            self.imageView.image = memeToEdit.originalImage
+            self.sendButton.isEnabled = true
+        }
+        else {
+            setTextFieldDefaults(self.topTextField, DEFAULT_TOP_TEXT)
+            setTextFieldDefaults(self.bottomTextField, DEFAULT_BOTTOM_TEXT)
+        }
     }
     
     override func viewWillAppear(_ animated: Bool) {
@@ -93,6 +113,7 @@ class ViewController: UIViewController, UIImagePickerControllerDelegate, UINavig
         self.topTextField.text=DEFAULT_TOP_TEXT
         self.bottomTextField.text=DEFAULT_BOTTOM_TEXT
         self.sendButton.isEnabled=false
+        self.navigationController?.popViewController(animated: true)
     }
     
     @IBAction func share(_ sender: Any) {
@@ -100,11 +121,16 @@ class ViewController: UIViewController, UIImagePickerControllerDelegate, UINavig
         let activityViewController = UIActivityViewController(activityItems: items, applicationActivities: nil)
         activityViewController.completionWithItemsHandler = {
             (activityType, completed, returnedItems, error) in
-            if (completed) {
+            if completed {
+                print("ActivityViewController completion handler successful - completed is true")
                 self.save()
             }
+            else {
+                print("ActivityViewController completion handler failed? - completed is false")
+            }
+            self.navigationController?.popViewController(animated: true)
         }
-        present(activityViewController, animated: true, completion: nil)
+        present(activityViewController, animated: true, completion: nil )
     }
     
     func setTextFieldDefaults(_ textField: UITextField, _ defaultText: String) {
@@ -123,7 +149,11 @@ class ViewController: UIViewController, UIImagePickerControllerDelegate, UINavig
     }
     
     func save() {
-        _ = Meme(topText: self.topTextField.text!, bottomText: self.bottomTextField.text!, originalImage: self.imageView.image!, memedImage: generateMemedImage())
+        let meme = Meme(topText: self.topTextField.text!, bottomText: self.bottomTextField.text!, originalImage: self.imageView.image!, memedImage: generateMemedImage())
+        
+        let object = UIApplication.shared.delegate
+        let appDelegate = object as! AppDelegate
+        appDelegate.memes.append(meme)
     }
     
     func generateMemedImage() -> UIImage {
